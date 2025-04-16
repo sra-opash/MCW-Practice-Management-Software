@@ -2,14 +2,8 @@
 
 import type React from "react";
 import { usePathname, useRouter } from "next/navigation";
-import { ChevronDown } from "lucide-react";
 import { cn } from "@mcw/utils";
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "@radix-ui/react-accordion";
+import { Accordion } from "@mcw/ui";
 
 interface SidebarProps {
   mobile?: boolean;
@@ -126,102 +120,18 @@ function NavigationSection({
         </p>
       </div>
       <Accordion
-        type="single"
-        collapsible
-        className="w-full flex flex-col gap-3 mt-3"
-      >
-        {items.map((item, index) => (
-          <AccordionItem key={item.href} value={`item-${index + 1}`}>
-            <AccordionTrigger
-              className="text-[16px] font-medium leading-[16px] text-[#374151] w-full text-left flex items-center justify-between"
-              aria-label={`Toggle ${item.label} section`}
-            >
-              {item.label}
-              <ChevronDown className="transition-transform duration-200 data-[state=open]:rotate-180" />
-            </AccordionTrigger>
-            <AccordionContent className="overflow-hidden data-[state=open]:animate-accordion-down data-[state=closed]:animate-accordion-up">
-              <div className="mt-3">
-                {item.children ? (
-                  <div className="space-y-2">
-                    {item.children.map((child) => (
-                      <div
-                        key={child.href}
-                        className={cn(
-                          "group rounded-lg h-[72px] flex flex-col item justify-center p-4 gap-1",
-                          currentPath === child.href
-                            ? "bg-[#DEECE7]"
-                            : "hover:bg-[#DEECE7] cursor-pointer",
-                        )}
-                        onClick={() => onNavigate(child.href)}
-                        role="button"
-                        tabIndex={0}
-                        onKeyDown={(e) => {
-                          if (e.key === "Enter" || e.key === " ") {
-                            e.preventDefault();
-                            onNavigate(child.href);
-                          }
-                        }}
-                        aria-current={
-                          currentPath === child.href ? "page" : undefined
-                        }
-                      >
-                        <h4
-                          className={cn(
-                            "text-[16px] font-bold leading-[16px]",
-                            currentPath === child.href
-                              ? "text-[#2D8467]"
-                              : "text-[#1A202C] group-hover:text-[#2D8467]",
-                          )}
-                        >
-                          {child.label}
-                        </h4>
-                        <p className="text-[12px] font-normal text-[#4B5563] leading-[16px]">
-                          {child.description}
-                        </p>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div
-                    className={cn(
-                      "group rounded-lg h-[72px] flex flex-col item justify-center p-4 gap-1",
-                      currentPath === item.href
-                        ? "bg-[#DEECE7]"
-                        : "hover:bg-[#DEECE7] cursor-pointer",
-                    )}
-                    onClick={() => onNavigate(item.href)}
-                    role="button"
-                    tabIndex={0}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter" || e.key === " ") {
-                        e.preventDefault();
-                        onNavigate(item.href);
-                      }
-                    }}
-                    aria-current={
-                      currentPath === item.href ? "page" : undefined
-                    }
-                  >
-                    <h4
-                      className={cn(
-                        "text-[16px] font-bold leading-[16px]",
-                        currentPath === item.href
-                          ? "text-[#2D8467]"
-                          : "text-[#1A202C] group-hover:text-[#2D8467]",
-                      )}
-                    >
-                      {item.label}
-                    </h4>
-                    <p className="text-[12px] font-normal text-[#4B5563] leading-[16px]">
-                      {item.description}
-                    </p>
-                  </div>
-                )}
-              </div>
-            </AccordionContent>
-          </AccordionItem>
-        ))}
-      </Accordion>
+        items={items.map((item) => ({
+          title: item.label,
+          content: item.description,
+          value: item.href,
+          children: item.children,
+          onClick: () => onNavigate(item.href),
+          className: cn(
+            "cursor-pointer px-2 py-1 rounded hover:bg-gray-100",
+            currentPath === item.href && "bg-[#E0F2F1]",
+          ),
+        }))}
+      />
     </div>
   );
 }

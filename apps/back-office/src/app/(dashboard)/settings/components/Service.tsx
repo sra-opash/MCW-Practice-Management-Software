@@ -1,17 +1,8 @@
 "use client";
 import type React from "react";
-import { Button, Checkbox, Input } from "@mcw/ui";
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "@radix-ui/react-accordion";
-import arrow from "../../../../../public/images/Frame.svg";
-import Image from "next/image";
+import { Button, Checkbox, Input, Label } from "@mcw/ui";
 import { useEffect, useState } from "react";
 import { CreateService } from "./CreateService";
-import { toast } from "../../../hooks/use-toast";
 
 interface Service {
   id: string;
@@ -30,12 +21,24 @@ interface Service {
 
 export default function Service() {
   const [services, setServices] = useState<Service[]>([]);
-  const [serviceOpen, setServiceOpen] = useState(false);
   const [createServiceModel, setCreateServiceModel] = useState(false);
-  const [openItem, setOpenItem] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
   const [isLoadingServices, setIsLoadingServices] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [openItems, setOpenItems] = useState<string[]>([]);
+
+  const allowMultipleOpen = true;
+
+  const toggleItem = (value: string) => {
+    setOpenItems((prev) =>
+      allowMultipleOpen
+        ? prev.includes(value)
+          ? prev.filter((v) => v !== value)
+          : [...prev, value]
+        : prev.includes(value)
+          ? []
+          : [value],
+    );
+  };
 
   const fetchServices = async () => {
     setIsLoadingServices(true);
@@ -49,11 +52,6 @@ export default function Service() {
       setServices(data);
     } catch (err) {
       setError("Failed to load services. Please try again.");
-      toast({
-        title: "Error",
-        description: "Failed to load services. Please try again.",
-        variant: "destructive",
-      });
       console.error("Error fetching services:", err);
     } finally {
       setIsLoadingServices(false);
@@ -84,29 +82,14 @@ export default function Service() {
 
   const validateService = (service: Service): boolean => {
     if (!service.description?.trim()) {
-      toast({
-        title: "Validation Error",
-        description: "Description is required",
-        variant: "destructive",
-      });
       return false;
     }
 
     if (service.rate < 0) {
-      toast({
-        title: "Validation Error",
-        description: "Rate must be a positive number",
-        variant: "destructive",
-      });
       return false;
     }
 
     if (service.duration < 1) {
-      toast({
-        title: "Validation Error",
-        description: "Duration must be at least 1 minute",
-        variant: "destructive",
-      });
       return false;
     }
 
@@ -114,7 +97,6 @@ export default function Service() {
   };
 
   const submitEditForm = async (id: string) => {
-    setIsLoading(true);
     try {
       const service = services.find((s) => s.id === id);
       if (!service) {
@@ -122,7 +104,6 @@ export default function Service() {
       }
 
       if (!validateService(service)) {
-        setIsLoading(false);
         return;
       }
 
@@ -140,23 +121,8 @@ export default function Service() {
       }
 
       await fetchServices(); // Refresh the services list
-      toast({
-        title: "Success",
-        description: "Service updated successfully",
-      });
-      setOpenItem(null); // Close the accordion after successful update
     } catch (err) {
-      toast({
-        title: "Error",
-        description:
-          err instanceof Error
-            ? err.message
-            : "Failed to update service. Please try again.",
-        variant: "destructive",
-      });
-      console.error("Failed to save service:", err);
-    } finally {
-      setIsLoading(false);
+      throw new Error("Failed to save service", { cause: err as Error });
     }
   };
 
@@ -250,268 +216,180 @@ export default function Service() {
                 </div>
               ) : (
                 <div role="list" aria-label="Services list">
-                  {services.map((service, index) => (
-                    <div
-                      key={service.id}
-                      className="border-t border-[#E5E7EB] mt-4"
-                    >
-                      <Accordion
-                        type="single"
-                        collapsible
-                        className="w-full flex flex-col gap-3 mt-3"
-                        onValueChange={(value) => setOpenItem(value)}
+                  {services.map((item, indx) => {
+                    const isOpen = openItems.includes(item.id);
+                    return (
+                      <div
+                        key={indx}
+                        className="border-t border-[#E5E7EB] mt-4"
                       >
-                        <AccordionItem value={`item-${index}`}>
-                          <AccordionTrigger
-                            className={`text-[16px] font-medium leading-[16px] text-[#374151] w-full text-left flex items-center justify-between p-[20px] ${
-                              openItem === `item-${index}`
-                                ? "bg-[#0000000A] rounded-t-lg"
-                                : ""
-                            }`}
-                            onClick={() =>
-                              setServiceOpen(!serviceOpen ? true : false)
-                            }
-                          >
-                            <div className="flex flex-col gap-2">
-                              <div className="flex gap-3">
-                                <p className="text-[16px] font-normal text-[#2D8467] leading-[16px]">
-                                  {service?.code}
-                                </p>
-                                <p className="text-[16px] font-normal text-[#2D8467] leading-[16px]">
-                                  {service.description}
-                                </p>
-                              </div>
-                              <p className="text-[14px] font-normal text-[#4B5563] leading-[14px]">
-                                {`${service.duration} minutes at ${service.rate}$`}
-                              </p>
-                              <div className="flex gap-2 items-center">
-                                <Image src={arrow} alt="image" />
-                                <p className="text-[14px] font-normal text-[#8D8D8D] leading-[14px]">
-                                  Default practice service
-                                </p>
-                              </div>
+                        <button
+                          onClick={() => toggleItem(item.id)}
+                          className={
+                            isOpen
+                              ? "w-full flex justify-between items-center p-4 text-left font-medium bg-[#0000000A]  transition"
+                              : "w-full flex justify-between items-center p-4 text-left font-medium transition"
+                          }
+                        >
+                          <div className="flex flex-col gap-2">
+                            <div className="flex gap-2">
+                              <span className="text-[16px] font-normal text-[#2D8467]">
+                                {item.code}
+                              </span>
+                              <span className="text-[16px] font-normal text-[#2D8467]">
+                                {item.description}
+                              </span>
                             </div>
-                          </AccordionTrigger>
-                          <AccordionContent className="bg-[#0000000A] p-[20px] rounded-b-lg overflow-hidden data-[state=open]:animate-accordion-down data-[state=closed]:animate-accordion-up">
-                            <div>
-                              <form
-                                className="flex flex-col gap-4"
-                                onSubmit={(e) => {
-                                  e.preventDefault();
-                                  submitEditForm(service.id);
-                                }}
-                              >
+                            <span className="text-[14px] font-normal text-[#4B5563]">
+                              {item.duration} minutes at ${item.rate}
+                            </span>
+                          </div>
+                        </button>
+
+                        {isOpen && (
+                          <div className="p-4 bg-[#0000000A] animate-in fade-in-10 space-y-3">
+                            <form
+                              onSubmit={() => submitEditForm(item.id)}
+                              className="space-y-6"
+                            >
+                              <div>
+                                <Label
+                                  htmlFor="description"
+                                  className="block mb-2"
+                                >
+                                  Description
+                                </Label>
+                                <Input
+                                  id="description"
+                                  value={item.description}
+                                  onChange={(e) =>
+                                    handleChange(
+                                      item.id,
+                                      e.target.value,
+                                      "description",
+                                    )
+                                  }
+                                  className="w-full max-w-md"
+                                />
+                              </div>
+
+                              <div className="flex flex-wrap gap-6">
                                 <div>
-                                  <label className="text-[16px] font-normal text-[#374151]">
-                                    Description
-                                  </label>
+                                  <Label htmlFor="rate" className="block mb-2">
+                                    Rate
+                                  </Label>
                                   <Input
-                                    name="description"
-                                    id="description"
-                                    placeholder="Enter Description"
-                                    value={service.description}
-                                    className="bg-[#ffffff] w-[50%] mt-2"
+                                    id="rate"
+                                    value={item.rate}
                                     onChange={(e) =>
                                       handleChange(
-                                        service.id,
+                                        item.id,
                                         e.target.value,
-                                        "description",
+                                        "rate",
                                       )
                                     }
-                                    disabled={isLoading}
+                                    className="w-full max-w-[250px]"
                                   />
                                 </div>
 
-                                <div className="flex items-center justify-between">
-                                  <div className="flex gap-7">
-                                    <div>
-                                      <label className="text-[16px] font-normal text-[#374151]">
-                                        Rate
-                                      </label>
-                                      <Input
-                                        name="rate"
-                                        id="rate"
-                                        type="number"
-                                        step="0.01"
-                                        min="0"
-                                        placeholder="Enter rate"
-                                        value={service.rate}
-                                        className="bg-[#ffffff] w-[230px] mt-2"
-                                        onChange={(e) =>
-                                          handleChange(
-                                            service.id,
-                                            e.target.value,
-                                            "rate",
-                                          )
-                                        }
-                                        disabled={isLoading}
-                                      />
-                                    </div>
-
-                                    <div>
-                                      <label className="text-[16px] font-normal text-[#374151]">
-                                        Default Duration
-                                      </label>
-                                      <div className="flex items-center gap-2">
-                                        <Input
-                                          name="duration"
-                                          type="number"
-                                          min="1"
-                                          placeholder="Enter duration"
-                                          value={service.duration}
-                                          className="bg-[#ffffff] w-[230px] mt-2"
-                                          onChange={(e) =>
-                                            handleChange(
-                                              service.id,
-                                              e.target.value,
-                                              "duration",
-                                            )
-                                          }
-                                          disabled={isLoading}
-                                        />
-                                        <p className="text-[16px] font-normal text-[#374151]">
-                                          min
-                                        </p>
-                                      </div>
-                                    </div>
-                                  </div>
-
-                                  <div className="flex items-center gap-2">
-                                    <Checkbox
-                                      id={`active-${service.id}`}
-                                      checked={service.isActive}
-                                      onCheckedChange={(checked) =>
+                                <div className="flex items-end gap-2">
+                                  <div>
+                                    <Label
+                                      htmlFor="duration"
+                                      className="block mb-2"
+                                    >
+                                      Default Duration
+                                    </Label>
+                                    <Input
+                                      id="duration"
+                                      value={item.duration}
+                                      onChange={(e) =>
                                         handleChange(
-                                          service.id,
-                                          checked.toString(),
-                                          "isActive",
+                                          item.id,
+                                          e.target.value,
+                                          "duration",
                                         )
                                       }
-                                      disabled={isLoading}
+                                      className="w-[80px]"
                                     />
-                                    <label
-                                      htmlFor={`active-${service.id}`}
-                                      className="text-[16px] font-normal text-[#374151]"
-                                    >
-                                      Active
-                                    </label>
+                                  </div>
+                                  <span className="mb-2.5 text-gray-600">
+                                    min
+                                  </span>
+
+                                  <div className="ml-6 mb-2.5 flex items-center gap-2">
+                                    <Checkbox
+                                      id="active"
+                                      defaultChecked={item.isActive}
+                                    />
+                                    <Label htmlFor="active">Active</Label>
                                   </div>
                                 </div>
+                              </div>
 
-                                <div className="flex items-center gap-2">
-                                  <Checkbox
-                                    id={`units-${service.id}`}
-                                    checked={service.isUnitBased}
-                                    onCheckedChange={(checked) =>
+                              <div className="flex items-center gap-2">
+                                <Checkbox id="bill-units" />
+                                <Label
+                                  htmlFor="bill-units"
+                                  className="flex items-center"
+                                >
+                                  Bill this code in units
+                                  {/* <Info className="h-4 w-4 ml-2 text-gray-400" /> */}
+                                </Label>
+                              </div>
+
+                              <div>
+                                <h3 className="font-medium mb-3">
+                                  Booking Options
+                                </h3>
+                                <div className="flex items-center gap-2 mb-4">
+                                  <Checkbox id="online-booking" />
+                                  <Label htmlFor="online-booking">
+                                    Available for online appointment requests
+                                  </Label>
+                                </div>
+
+                                <div className="flex items-center gap-2 flex-wrap">
+                                  <span>Block off</span>
+                                  <Input
+                                    defaultValue="0"
+                                    onChange={(e) =>
                                       handleChange(
-                                        service.id,
-                                        checked.toString(),
-                                        "isUnitBased",
+                                        item.id,
+                                        e.target.value,
+                                        "minutesBlockBefore",
                                       )
                                     }
-                                    disabled={isLoading}
+                                    className="w-[60px]"
                                   />
-                                  <label
-                                    htmlFor={`units-${service.id}`}
-                                    className="text-[16px] font-normal text-[#374151]"
-                                  >
-                                    Bill this code in units
-                                  </label>
+                                  <span>minutes before and</span>
+                                  <Input
+                                    defaultValue="0"
+                                    onChange={(e) =>
+                                      handleChange(
+                                        item.id,
+                                        e.target.value,
+                                        "minutesBlockAfter",
+                                      )
+                                    }
+                                    className="w-[60px]"
+                                  />
+                                  <span>minutes after the appointment</span>
                                 </div>
+                              </div>
 
-                                <div className="flex flex-col gap-4">
-                                  <p className="text-[16px] font-semibold text-[#1F2937]">
-                                    Booking Options
-                                  </p>
-
-                                  <div className="flex items-center gap-2">
-                                    <Checkbox
-                                      id={`online-${service.id}`}
-                                      checked={service.isOnlineBookingEnabled}
-                                      onCheckedChange={(checked) =>
-                                        handleChange(
-                                          service.id,
-                                          checked.toString(),
-                                          "isOnlineBookingEnabled",
-                                        )
-                                      }
-                                      disabled={isLoading}
-                                    />
-                                    <label
-                                      htmlFor={`online-${service.id}`}
-                                      className="text-[16px] font-normal text-[#374151]"
-                                    >
-                                      Available for online appointment requests
-                                    </label>
-                                  </div>
-
-                                  <div className="flex items-center gap-2">
-                                    <p className="text-[16px] font-normal text-[#374151]">
-                                      Block
-                                    </p>
-                                    <Input
-                                      name="minutesBefore"
-                                      type="number"
-                                      min="0"
-                                      className="w-[64px]"
-                                      value={service.minutesBlockBefore || ""}
-                                      onChange={(e) =>
-                                        handleChange(
-                                          service.id,
-                                          e.target.value,
-                                          "minutesBlockBefore",
-                                        )
-                                      }
-                                      disabled={isLoading}
-                                    />
-                                    <p className="text-[16px] font-normal text-[#374151]">
-                                      minutes before and
-                                    </p>
-                                    <Input
-                                      name="minutesAfter"
-                                      type="number"
-                                      min="0"
-                                      className="w-[64px]"
-                                      value={service.minutesBlockAfter || ""}
-                                      onChange={(e) =>
-                                        handleChange(
-                                          service.id,
-                                          e.target.value,
-                                          "minutesBlockAfter",
-                                        )
-                                      }
-                                      disabled={isLoading}
-                                    />
-                                    <p className="text-[16px] font-normal text-[#374151]">
-                                      minutes after the appointment
-                                    </p>
-                                  </div>
-                                </div>
-
-                                <div className="flex gap-3">
-                                  <Button
-                                    variant="outline"
-                                    type="button"
-                                    onClick={() => setOpenItem(null)}
-                                    disabled={isLoading}
-                                  >
-                                    Cancel
-                                  </Button>
-                                  <Button
-                                    variant="default"
-                                    type="submit"
-                                    disabled={isLoading}
-                                  >
-                                    {isLoading ? "Saving..." : "Save"}
-                                  </Button>
-                                </div>
-                              </form>
-                            </div>
-                          </AccordionContent>
-                        </AccordionItem>
-                      </Accordion>
-                    </div>
-                  ))}
+                              <div className="flex gap-3 mt-6">
+                                <Button variant="outline">Cancel</Button>
+                                <Button className="bg-emerald-600 hover:bg-emerald-700">
+                                  Save
+                                </Button>
+                              </div>
+                            </form>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
               )}
             </div>

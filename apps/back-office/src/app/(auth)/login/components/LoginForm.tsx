@@ -38,8 +38,6 @@ export default function LoginForm() {
         callbackUrl: "/clients",
       });
 
-      console.log(result, "result");
-
       if (result?.error) {
         setError("Invalid email or password. Please try again.");
         return;

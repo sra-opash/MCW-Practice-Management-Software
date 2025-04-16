@@ -5,11 +5,16 @@ import { Prisma } from "@prisma/client";
 export async function POST(req: Request) {
   const body = await req.json();
 
-  console.log(body, "body");
+  if (!body.service || !body.rate || !body.duration) {
+    return NextResponse.json(
+      { error: "Missing required fields" },
+      { status: 400 },
+    );
+  }
 
   const createdService = await prisma.practiceService.create({
     data: {
-      type: "",
+      type: body.type || "default",
       description: body.description,
       code: body.service.toLowerCase().replace(/\s+/g, "-"),
       rate: new Prisma.Decimal(body.rate), // Prisma Decimal type
@@ -38,7 +43,6 @@ export async function GET() {
 export async function PUT(req: NextRequest) {
   try {
     const body = await req.json();
-    console.log(body, "body");
 
     const id = req.nextUrl.searchParams.get("id");
 
