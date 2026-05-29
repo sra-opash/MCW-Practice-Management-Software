@@ -137,3 +137,4 @@ dist
 .turbo
 
 .DS_Store
+config.bat
